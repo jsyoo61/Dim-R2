@@ -357,7 +357,8 @@ def get_axislabel(axis):
 across all 3 data types
 '''
 figsize_multiplier = 0.7
-titles = ['$y_{pred}$', '$y_{pred}$ (Naive)', '$\\bar{y}_{pred}$', '$\\bar{y}_{pred}$ (Naive)']
+# titles = ['$y_{pred}$\nAxis_ref=Time', '$y_{pred}$\nAxis_ref=Trial (Default)', '$\\bar{y}_{true}$\nAxis_ref=Time', '$\\bar{y}_{true}$\nAxis_ref=Trial (Default)']
+titles = ['$y_{pred}$\nAxis_ref=Axis (Trial)', '$\\bar{y}_{true}$\nAxis_ref=Axis (Trial)', '$y_{pred}$\nAxis_ref=Time', '$\\bar{y}_{true}$\nAxis_ref=Time']
 for data_name, data in data_dict.items():
     path_save_data = path_save / data_name
 
@@ -368,8 +369,9 @@ for data_name, data in data_dict.items():
     r2_baseline = U.r2_score(y_true, y_pred_mean, axis=0)
     r2_baseline_adjusted = U.r2_score(y_true, y_pred_mean, axis=0, axis_ref=1, axis_bias=1)
 
-    scores = [r2_adjusted, r2_basic, r2_baseline_adjusted, r2_baseline]
-    fig, axes = plt.subplots(ncols=4, figsize=(figsize[0]*len(scores)*figsize_multiplier, figsize[1]*figsize_multiplier*1.45), sharey=True)
+    # scores = [r2_adjusted, r2_basic, r2_baseline_adjusted, r2_baseline]
+    scores = [r2_basic, r2_baseline, r2_adjusted, r2_baseline_adjusted]
+    fig, axes = plt.subplots(ncols=4, figsize=(figsize[0]*len(scores)*figsize_multiplier, figsize[1]*figsize_multiplier*1.5), sharey=True)
     for ax, score, title in zip(axes, scores, titles):
         im = plot_dimensional_score(score, ax=ax)
         ax.set_title(title)
