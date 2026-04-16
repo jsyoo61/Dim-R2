@@ -208,3 +208,5 @@ __marimo__/
 
 *.png
 *.xlsx
+VAE/CelebA/
+VAE/MNIST/

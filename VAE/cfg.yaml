@@ -1,0 +1,24 @@
+nn:
+  n_filters: 10
+  latent_dim: 100
+
+train:
+  updat:
+    lr: 1e-3
+    batch_size: 64
+    epoch: 30000
+    cv_step: 40
+  validation:
+    target_dataset: "val"
+    patience: 50
+    criterion: "mean_absolute_error"
+    increase_better: false
+    batch_size: 4092
+
+runtime:
+  random:
+    seed: 0
+    strict: false
+
+plot:
+  figsize: [5, 5]
