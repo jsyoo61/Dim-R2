@@ -210,3 +210,4 @@ __marimo__/
 *.xlsx
 VAE/CelebA/
 VAE/MNIST/
+*.pt

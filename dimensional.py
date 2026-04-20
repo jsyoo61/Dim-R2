@@ -11,6 +11,7 @@ import pandas as pd
 import matplotlib as mpl
 
 import tools as T
+import tools.plot
 import tools.sklearn.metrics
 import utils as U
 
@@ -26,10 +27,10 @@ path_save.mkdir(parents=True, exist_ok=True)
 Create dataset
 '''
 D = 1000
-T = 100
+time = 100
 C = 5
 
-t, y_true, y_pred = U.make_signals(T, C, stagger_phase=False)
+t, y_true, y_pred = U.make_signals(time, C, stagger_phase=False)
 y_true, y_pred = np.tile(y_true, (D, 1, 1)), np.tile(y_pred, (D, 1, 1)) # (trials, time, neuron)
 print(y_true.shape)
 
@@ -41,10 +42,12 @@ noise_pred = np.zeros(y_pred.shape)
 Add noise to the signals
 '''
 d_noise_add = {1: 'linear_increasing', 2: 'linear_decreasing', 3: 'constant'}
+noise='uniform'
+# noise='gaussian'
 
-for C_i, noisetype in d_noise_add.items():
-    noise1 = np.stack([U.noise(y_true_, noisetype=noisetype) for y_true_ in y_true[:,:,C_i]], axis=0)
-    noise2 = np.stack([U.noise(y_pred_, noisetype=noisetype) for y_pred_ in y_pred[:,:,C_i]], axis=0)
+for C_i, noisescale in d_noise_add.items():
+    noise1 = np.stack([U.noise(y_true_, noisescale=noisescale, noise=noise) for y_true_ in y_true[:,:,C_i]], axis=0)
+    noise2 = np.stack([U.noise(y_pred_, noisescale=noisescale, noise=noise) for y_pred_ in y_pred[:,:,C_i]], axis=0)
     
     noise_true[:, :, C_i] = noise1
     noise_pred[:, :, C_i] = noise2
@@ -54,6 +57,7 @@ y_pred += noise_pred
 
 print(noise_true.var(axis=(0,1)))
 print(noise_pred.var(axis=(0,1)))
+
 # %%
 '''
 substitute with noise
@@ -71,13 +75,14 @@ for C_i in l_noise:
     y_true[:, :, C_i] = noise1
     y_pred[:, :, C_i] = noise2
 
+y_true.shape
 print(y_true.var(axis=(0,1)))
 plt.plot(y_true[0])
 plt.matshow(y_true[0], aspect='auto')
 
 # %%
 '''
-Create similar dataset with consistent/varying neural bias
+Create similar dataset with consistent/varying Channel bias
 '''
 bias_consistent = np.broadcast_to(np.arange(y_true.shape[-1]), y_true.shape)
 bias_varying = np.stack([np.random.permutation(bias_consistent_.T).T  for bias_consistent_ in bias_consistent], axis=0)
@@ -87,11 +92,11 @@ data_dict = {
         'y_true': y_true,
         'y_pred': y_pred,
     },
-    'Consistent Neural Bias': {
+    'Consistent Channel Bias': {
         'y_true': y_true + bias_consistent,
         'y_pred': y_pred + bias_consistent,
     },
-    'Varying Neural Bias': {
+    'Varying Channel Bias': {
         'y_true': y_true + bias_varying,
         'y_pred': y_pred + bias_varying,
     }
@@ -121,7 +126,7 @@ def plot_sample(y, xlim_sync=False, figsize_y=2.5):
     for i, (ax, y_) in enumerate(zip(axes, y.T)):
         ax.plot(y_, yticks)
         ax.invert_yaxis()
-        ax.set_xlabel(f'N{i} ($\mu$={int(np.round(y_.mean())):d})')
+        ax.set_xlabel(f'C{i} ($\mu$={int(np.round(y_.mean())):d})')
 
     axes[0].set_ylabel('Time')
 
@@ -138,6 +143,7 @@ def plot_sample(y, xlim_sync=False, figsize_y=2.5):
 
     return fig, axes
 
+# %%
 data_i = 1
 xlim_amplifier = 1.05
 n_samples = 3
@@ -169,8 +175,8 @@ for data_name in data_dict.keys():
 2D Dim-R2 score comparison
 '''
 axis_list = list(range(y_true.ndim))
-axislabel_list = ['Data', 'Time', 'Neuron']
-axislabel_dict = {i:axislabel for i, axislabel in enumerate(axislabel_list)}
+axislabels = ['Data', 'Time', 'Channel']
+axislabel_dict = {i:axislabel for i, axislabel in enumerate(axislabels)}
 axislabel_dict[None] = 'None'
 
 figsize=(4,4)
@@ -180,39 +186,6 @@ suptitle_y = 1.02
 subfigtitlesize = None
 hspace = 0.3
 wspace = 0.4
-
-def add_colorbar(ax, mappable=None, width=0.02, pad=0.02, divide=False):
-    """
-    Add a colorbar to the given axes.
-
-    Parameters
-    ----------
-    ax : matplotlib.axes.Axes
-
-    Returns
-    -------
-    cbar : matplotlib.colorbar.Colorbar
-        The colorbar added to the axes.
-    """
-    fig = ax.figure
-    if mappable is None:
-        if ax.images:
-            mappable = ax.images[0]
-        else:
-            raise ValueError("No mappable found in the axes. Please provide a mappable or ensure the axes contain an image.")
-
-    if divide:
-        from mpl_toolkits.axes_grid1 import make_axes_locatable
-        divider = make_axes_locatable(ax)
-        cax = divider.append_axes("right", size=width, pad=pad)
-    else:        
-        bbox = ax.get_position()
-        cax = fig.add_axes([bbox.x1 + pad, bbox.y0, width, bbox.height])
-    cbar = fig.colorbar(mappable, cax=cax)
-    # cbar = ax.figure.colorbar(cm.ScalarMappable(norm=ax.images[0].norm, cmap=ax.images[0].cmap), cax=cax)
-    # cbar = ax.figure.colorbar(ax.images[0], ax=ax, location='right', pad=0.15)
-
-    return cbar
 
 def plot_r2_combinations_extensive(y_true, y_pred, axis_ref=None, axis_bias=None):
     # fig = plt.figure(figsize=(figsize[0]*ncols, figsize[1]*nrows), constrained_layout=True)
@@ -227,19 +200,19 @@ def plot_r2_combinations_extensive(y_true, y_pred, axis_ref=None, axis_bias=None
 
         axes = subfig.subplots(ncols=ncols, nrows=1)
         score, subfig, axes = U.r2_score_plot(y_true, y_pred, axis=axis, axis_ref=axis_ref, axis_bias=axis_bias, fig=subfig, axes=axes)
-        [ax.set_xlabel(axislabel_list[axis_remaining[1]]) for ax in axes[[0,2]]]
-        [ax.set_ylabel(axislabel_list[axis_remaining[0]]) for ax in axes[[0,2]]]
+        [ax.set_xlabel(axislabels[axis_remaining[1]]) for ax in axes[[0,2]]]
+        [ax.set_ylabel(axislabels[axis_remaining[0]]) for ax in axes[[0,2]]]
         
         axis_ref_remaining = list(set(axis_list) - {axis} - set_axis_ref)
         if len(axis_ref_remaining) == 2:
-            axes[1].set_ylabel(axislabel_list[axis_ref_remaining[0]])
-            axes[1].set_xlabel(axislabel_list[axis_ref_remaining[1]])
+            axes[1].set_ylabel(axislabels[axis_ref_remaining[0]])
+            axes[1].set_xlabel(axislabels[axis_ref_remaining[1]])
         elif len(axis_ref_remaining) == 1:
-            axes[1].set_xlabel(axislabel_list[axis_ref_remaining[0]])
+            axes[1].set_xlabel(axislabels[axis_ref_remaining[0]])
 
-        axis_name = axislabel_list[axis]
-        # axis_ref_name = axislabel_list[axis_ref] if axis_ref is not None else 'None'
-        # axis_bias_name = axislabel_list[axis_bias] if axis_bias is not None else 'None'
+        axis_name = axislabels[axis]
+        # axis_ref_name = axislabels[axis_ref] if axis_ref is not None else 'None'
+        # axis_bias_name = axislabels[axis_bias] if axis_bias is not None else 'None'
 
         subfig.suptitle(f"Axis: ({axis_name})", y=suptitle_y, fontsize=subfigtitlesize)
 
@@ -249,23 +222,21 @@ def plot_r2_combinations_extensive(y_true, y_pred, axis_ref=None, axis_bias=None
 
         axes = subfig.subplots(ncols=ncols, nrows=1)
         score, subfig, axes = U.r2_score_plot(y_true, y_pred, axis=(i,j), axis_ref=axis_ref, axis_bias=axis_bias, fig=subfig, axes=axes)
-        [ax.set_xlabel(axislabel_list[axis_remaining[0]]) for ax in axes[[0,2]]]
+        [ax.set_xlabel(axislabels[axis_remaining[0]]) for ax in axes[[0,2]]]
 
         axis_ref_remaining = list(set(axis_list) - {i,j} - set_axis_ref)
         if len(axis_ref_remaining) == 2:
-            axes[1].set_ylabel(axislabel_list[axis_ref_remaining[0]])
-            axes[1].set_xlabel(axislabel_list[axis_ref_remaining[1]])
+            axes[1].set_ylabel(axislabels[axis_ref_remaining[0]])
+            axes[1].set_xlabel(axislabels[axis_ref_remaining[1]])
         elif len(axis_ref_remaining) == 1:
-            axes[1].set_xlabel(axislabel_list[axis_ref_remaining[0]])
+            axes[1].set_xlabel(axislabels[axis_ref_remaining[0]])
 
-        axis_names = axislabel_list[i],axislabel_list[j]
-        # axis_ref_name = axislabel_list[axis_ref] if axis_ref is not None else 'None'
-        # axis_bias_name = axislabel_list[axis_bias] if axis_bias is not None else 'None'
+        axis_names = axislabels[i],axislabels[j]
+        # axis_ref_name = axislabels[axis_ref] if axis_ref is not None else 'None'
+        # axis_bias_name = axislabels[axis_bias] if axis_bias is not None else 'None'
 
         subfig.suptitle(f"Axis: ({axis_names[0]},{axis_names[1]})", y=suptitle_y, fontsize=subfigtitlesize)
 
-    [add_colorbar(ax) for ax in axes[:,-1]]
-    
     return fig, axes
 
 def plot_r2_combinations(y_true, y_pred, axis_ref_bias_list):
@@ -279,11 +250,11 @@ def plot_r2_combinations(y_true, y_pred, axis_ref_bias_list):
         axes = subfig.subplots(ncols=len(axis_ref_bias_list), nrows=1)
         for ax, (axis_ref, axis_bias) in zip(axes, axis_ref_bias_list):
             score = U.r2_score(y_true, y_pred, axis=axis, axis_ref=axis_ref, axis_bias=axis_bias)
-            plot_dimensional_score(score, ax=ax)
-        [ax.set_xlabel(axislabel_list[axis_remaining[1]]) for ax in axes]
-        [ax.set_ylabel(axislabel_list[axis_remaining[0]]) for ax in axes]
+            U.plot_dimensional_score(score, ax=ax, vmin=0, vmax=1)
+        [ax.set_xlabel(axislabels[axis_remaining[1]]) for ax in axes]
+        [ax.set_ylabel(axislabels[axis_remaining[0]]) for ax in axes]
 
-        axis_name = axislabel_list[axis]
+        axis_name = axislabels[axis]
         subfig.suptitle(f"Axis: ({axis_name})", y=suptitle_y, fontsize=subfigtitlesize)
 
     # 2D (1D result)
@@ -293,17 +264,17 @@ def plot_r2_combinations(y_true, y_pred, axis_ref_bias_list):
         axes = subfig.subplots(ncols=len(axis_ref_bias_list), nrows=1)
         for ax, (axis_ref, axis_bias) in zip(axes, axis_ref_bias_list):
             score = U.r2_score(y_true, y_pred, axis=(i,j), axis_ref=axis_ref, axis_bias=axis_bias)
-            plot_dimensional_score(score, ax=ax)
+            U.plot_dimensional_score(score, ax=ax, vmin=0, vmax=1)
 
-        [ax.set_xlabel(axislabel_list[axis_remaining[0]]) for ax in axes]
+        [ax.set_xlabel(axislabels[axis_remaining[0]]) for ax in axes]
         [ax.set_yticks([]) for ax in axes]
 
-        axis_names = axislabel_list[i],axislabel_list[j]
+        axis_names = axislabels[i],axislabels[j]
         subfig.suptitle(f"Axis: ({axis_names[0]},{axis_names[1]})", y=suptitle_y, fontsize=subfigtitlesize)
     
     axes = np.array(fig.axes).reshape(nrows, len(axis_ref_bias_list))
     [ax.set_title(f"Ref: {axis_ref}, Bias: {axis_bias}", y=1.18) for ax, (axis_ref, axis_bias) in zip(axes[0], axis_ref_bias_list)]
-    [add_colorbar(ax) for ax in axes[:,-1]]
+    [T.plot.add_colorbar(ax) for ax in axes[:,-1]]
 
     return fig, axes
 
@@ -318,31 +289,20 @@ def plot_r2_axis(data_dict, axis, axis_ref_bias_list):
         
         for ax, (axis_ref, axis_bias) in zip(axes, axis_ref_bias_list):
             score = U.r2_score(y_true, y_pred, axis=axis, axis_ref=axis_ref, axis_bias=axis_bias)
-            plot_dimensional_score(score, ax=ax)
+            U.plot_dimensional_score(score, ax=ax, vmin=0, vmax=1)
 
         axis_remaining = list(set(axis_list) - {axis})
-        [ax.set_xlabel(axislabel_list[axis_remaining[1]]) for ax in axes]
-        [ax.set_ylabel(axislabel_list[axis_remaining[0]]) for ax in axes]
+        [ax.set_xlabel(axislabels[axis_remaining[1]]) for ax in axes]
+        [ax.set_ylabel(axislabels[axis_remaining[0]]) for ax in axes]
 
-        axis_name = axislabel_list[axis]
+        axis_name = axislabels[axis]
         subfig.suptitle(f"Data name: {data_name}", y=suptitle_y, fontsize=subfigtitlesize)
 
     axes = np.array(fig.axes).reshape(len(data_dict), len(axis_ref_bias_list))
     [ax.set_title(f"Ref: {axis_ref}, Bias: {axis_bias}", y=1.18) for ax, (axis_ref, axis_bias) in zip(axes[0], axis_ref_bias_list)]
-    [add_colorbar(ax) for ax in axes[:,-1]]
+    [T.plot.add_colorbar(ax) for ax in axes[:,-1]]
 
     return fig, axes
-
-def plot_dimensional_score(score, ax=None):
-    if isinstance(score, float):
-        score = np.array([[score]])
-    elif score.ndim == 1:
-        score = score.reshape(1, -1)
-        ax.set_yticks([])  # Hide y-ticks if score is 1D
-    im = ax.matshow(score, cmap='Blues', vmin=0, vmax=1, aspect='auto')
-    # fig.colorbar(im, ax=ax, label='R^2 Score')
-    # ax.set_title('Dim-$R^2$')
-    return im
 
 def get_axislabel(axis):
     if isinstance(axis, Iterable):
@@ -358,30 +318,32 @@ across all 3 data types
 '''
 figsize_multiplier = 0.7
 # titles = ['$y_{pred}$\nAxis_ref=Time', '$y_{pred}$\nAxis_ref=Trial (Default)', '$\\bar{y}_{true}$\nAxis_ref=Time', '$\\bar{y}_{true}$\nAxis_ref=Trial (Default)']
-titles = ['$y_{pred}$\nAxis_ref=Axis (Trial)', '$\\bar{y}_{true}$\nAxis_ref=Axis (Trial)', '$y_{pred}$\nAxis_ref=Time', '$\\bar{y}_{true}$\nAxis_ref=Time']
+titles = ['$\hat{y}$\n$\mathcal{A}_{norm}=\mathcal{A}=Data$', '$\\bar{y}$\n$\mathcal{A}_{norm}=\mathcal{A}$=Data', '$\hat{y}$\n$\mathcal{A}_{norm}$=Time', '$\\bar{y}$\n$\mathcal{A}_{norm}$=Time']
+data_name='No Bias'
+data = data_dict[data_name]
 for data_name, data in data_dict.items():
     path_save_data = path_save / data_name
 
     y_true, y_pred, y_pred_mean = data['y_true'], data['y_pred'], data['y_pred_mean']
 
     r2_basic = U.r2_score(y_true, y_pred, axis=0)
-    r2_adjusted = U.r2_score(y_true, y_pred, axis=0, axis_ref=1, axis_bias=1)
+    r2_adjusted = U.r2_score(y_true, y_pred, axis=0, axis_norm=1, axis_pool=1)
     r2_baseline = U.r2_score(y_true, y_pred_mean, axis=0)
-    r2_baseline_adjusted = U.r2_score(y_true, y_pred_mean, axis=0, axis_ref=1, axis_bias=1)
+    r2_baseline_adjusted = U.r2_score(y_true, y_pred_mean, axis=0, axis_norm=1, axis_pool=1)
 
     # scores = [r2_adjusted, r2_basic, r2_baseline_adjusted, r2_baseline]
     scores = [r2_basic, r2_baseline, r2_adjusted, r2_baseline_adjusted]
     fig, axes = plt.subplots(ncols=4, figsize=(figsize[0]*len(scores)*figsize_multiplier, figsize[1]*figsize_multiplier*1.5), sharey=True)
     for ax, score, title in zip(axes, scores, titles):
-        im = plot_dimensional_score(score, ax=ax)
+        im = U.plot_dimensional_score(score, ax=ax, vmin=0, vmax=1)
         ax.set_title(title)
-        ax.set_xlabel('Neuron')
+        ax.set_xlabel(axislabels[2])
         ax.xaxis.set_ticks_position('bottom')
-    axes[0].set_ylabel('Time')
+    axes[0].set_ylabel(axislabels[1])
     
     fig.suptitle(f"{data_name}", y=0.94)
     fig.tight_layout()
-    add_colorbar(axes[-1])
+    T.plot.add_colorbar(axes[-1])
     fig.savefig(path_save_data / f'dim_r2_{data_name}.png', dpi=300, bbox_inches='tight')
 
 # %%
@@ -402,7 +364,6 @@ Comprehensive Dim-R2 (All dimensional combinations), per data types
 '''
 for data_name, data in data_dict.items():
     path_save_data = path_save / data_name
-
     y_true, y_pred = data['y_true'], data['y_pred']
 
     fig, axes = plot_r2_combinations(y_true, y_pred, axis_ref_bias_list=axis_ref_bias_list)
@@ -425,5 +386,30 @@ for data_name, data in data_dict.items():
             fig.savefig(path_save_data / f"r2_extensive_ref_{axis_ref}_bias_{axis_bias}.png", dpi=300, bbox_inches='tight')
         except AssertionError as e:
             print(e)
+
+# %%
+ndim, axislabels = 3, ['Trial', 'Time', 'Neuron']
+ps = lambda s: it.chain.from_iterable(it.combinations(s, r) for r in range(1, len(s)+1))
+
+configs = [
+    (axis, axis_ref, axis_bias)
+    for axis in ps(range(ndim))
+    for extra in it.chain([()], *[it.combinations([d for d in range(ndim) if d not in axis], r) 
+                                   for r in range(1, len([d for d in range(ndim) if d not in axis])+1)])
+    if (axis_ref := tuple(sorted(axis + extra)))
+    for axis_bias in ps(axis_ref)
+]
+
+# %%
+for data_name, data in data_dict.items():
+    path_save_data = path_save / data_name
+    y_true, y_pred = data['y_true'], data['y_pred']
+
+    for axis, axis_ref, axis_bias in configs:
+        score, fig, axes = U.r2_score_plot(y_true, y_pred, axis=axis, axis_ref=axis_ref, axis_bias=axis_bias, axislabels=axislabels)
+        fig.suptitle(f'Axis: {axis}, Axis_ref: {axis_ref}, Axis_bias: {axis_bias}')
+        fig.tight_layout()
+        fig.savefig(path_save_data / f'r2_extensive_{axis}_{axis_ref}_{axis_bias}.png', dpi=300, bbox_inches='tight')
+
 
 # %%

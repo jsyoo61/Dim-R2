@@ -172,6 +172,7 @@ plt.close(fig)
 [plt.close(fig) for (fig, axes) in d_figaxes.values()]
 
 # %%
+os.getcwd()
 trainer.iter
 dir(trainer)
 dir(trainer.earlystopper)

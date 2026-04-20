@@ -361,8 +361,8 @@ def plot_overview(results, figsize=(5,5), targets_type='category'):
         assert len(axes.flatten())==4 or len(axes.flatten())==7
         x_true_mean, x_hat_mean, dim_r2 = d_data_temp['x_true_mean'], d_data_temp['x_hat_mean'], d_data_temp['dim-r2'] 
 
-        axes[0].matshow(x_true_mean, cmap='Grays')
-        axes[1].matshow(x_hat_mean, cmap='Grays')
+        axes[0].matshow(x_true_mean, cmap='Grays', vmin=0, vmax=1)
+        axes[1].matshow(x_hat_mean, cmap='Grays', vmin=0, vmax=1)
         im = axes[2].matshow(dim_r2, cmap=cmap)
         cbar = T.plot.add_colorbar(axes[2], mappable=im, width=cbar_width, divide=True)
         im = axes[3].matshow(dim_r2, vmin=0, vmax=1, cmap=cmap)
@@ -370,7 +370,7 @@ def plot_overview(results, figsize=(5,5), targets_type='category'):
 
         if not greyscale:
             x_true, x_hat = d_data_temp['x_true'], d_data_temp['x_hat']
-            dim_r2_channels = np.transpose(U.r2_score(x_true, x_hat, axis=0, axis_ref=(2,3)), (1,2,0)) # (W, H, 3)
+            dim_r2_channels = np.transpose(U.r2_score(x_true, x_hat, axis=0, axis_norm=(2,3)), (1,2,0)) # (W, H, 3)
             im = axes[4].matshow(dim_r2_channels[...,0], vmin=0, vmax=1, cmap='Reds_r')
             cbar = T.plot.add_colorbar(axes[4], mappable=im, width=cbar_width, divide=True)
             im = axes[5].matshow(dim_r2_channels[...,1], vmin=0, vmax=1, cmap='Greens_r')
@@ -404,7 +404,7 @@ def plot_overview(results, figsize=(5,5), targets_type='category'):
         x_true, x_hat = d_data['x_true'], d_data['x_hat']
         x_true_mean = np.transpose(x_true.mean(0), (1,2,0)) # (W, H, Channel)
         x_hat_mean = np.transpose(x_hat.mean(0), (1,2,0)) # (W, H, Channel)
-        dim_r2 = np.expand_dims(U.r2_score(x_true, x_hat, axis=(0,1), axis_ref=(2,3)),2) # (W, H, 1)
+        dim_r2 = np.expand_dims(U.r2_score(x_true, x_hat, axis=(0,1), axis_norm=(2,3)),2) # (W, H, 1)
 
         d_data_temp = {
             'x_true_mean': x_true_mean,
@@ -438,5 +438,8 @@ def plot_snapshot(network, ds_test, forward_f, figsize=(5,5), targets_type='cate
     results = hs.E.forward_network(network=network, dataset=ds_test, forward_f=forward_f)
     print(results.keys())
     fig, axes, d_figaxes = plot_overview(results, figsize=figsize, targets_type=targets_type)
+    # fig, axes, d_figaxes = plot_overview(results, figsize=cfg.plot.figsize)
 
     return fig, axes, d_figaxes
+
+# %%

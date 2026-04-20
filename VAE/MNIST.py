@@ -4,6 +4,7 @@ from omegaconf import OmegaConf, DictConfig
 import torch
 import torchvision
 import torchvision.transforms as transforms
+import matplotlib.pyplot as plt
 
 import hideandseek as hs
 import tools as T
@@ -102,8 +103,11 @@ n_snapshots = 16
 # fig, axes = U2.plot_overview(results, figsize=cfg.plot.figsize, targets_type='category')
 fig, axes, d_figaxes = U2.plot_snapshot(network, ds_test, forward_f=U2.forward_vae, figsize=cfg.plot.figsize)
 fig.savefig(path_save/f'MNIST_{trainer.iter}.png', dpi=300)
+plt.close(fig)
+
 for target, (fig, axes) in d_figaxes.items():
     fig.savefig(path_save/f'MNIST_{trainer.iter}_{target}.png', dpi=300)
+    plt.close(fig)
     
 for i in range(n_snapshots):
     trainer.train(step=n_updates)
@@ -111,8 +115,11 @@ for i in range(n_snapshots):
     # fig, axes = U2.plot_overview(results, figsize=cfg.plot.figsize, targets_type='category')
     fig, axes, d_figaxes = U2.plot_snapshot(network, ds_test, forward_f=U2.forward_vae, figsize=cfg.plot.figsize)
     fig.savefig(path_save/f'MNIST_{trainer.iter}.png', dpi=300)
+    plt.close(fig)
+
     for target, (fig, axes) in d_figaxes.items():
         fig.savefig(path_save/f'MNIST_{trainer.iter}_{target}.png', dpi=300)
+        plt.close(fig)
 
 # %%
 trainer.train()
@@ -122,7 +129,10 @@ trainer.save()
 # %%
 fig, axes, d_figaxes = U2.plot_snapshot(network, ds_test, forward_f=U2.forward_vae, figsize=cfg.plot.figsize)
 fig.savefig(path_save/f'MNIST_{trainer.iter}.png', dpi=300)
+plt.close(fig)
+
 for target, (fig, axes) in d_figaxes.items():
     fig.savefig(path_save/f'MNIST_{trainer.iter}_{target}.png', dpi=300)
+    plt.close(fig)
     
 # %%
