@@ -21,21 +21,24 @@ y_mean = np.broadcast_to(y_true.mean(0), y_true.shape)
 y_all = np.stack([y_true,y_pred,y_mean], axis=0)
 
 # %%
+# cmap='RdBu'
+# cmap='Greys'
+cmap='viridis'
 vmin = y_all.min()
 vmax = y_all.max()
 
 fig, axes = plt.subplots(ncols=3, figsize=(15,5))
-im = U.plot_dimensional_score(y_true, ax=axes[0], cmap='RdBu', vmin=vmin, vmax=vmax)
+im = U.plot_dimensional_score(y_true, ax=axes[0], cmap=cmap, vmin=vmin, vmax=vmax)
 axes[0].set_title('$y$')
 axes[0].set_ylabel('Time')
 axes[0].set_xlabel('Channel')
 
-im = U.plot_dimensional_score(y_pred, ax=axes[1], cmap='RdBu', vmin=vmin, vmax=vmax)
+im = U.plot_dimensional_score(y_pred, ax=axes[1], cmap=cmap, vmin=vmin, vmax=vmax)
 axes[1].set_title('$\hat{y}$')
 axes[1].set_xlabel('Channel')
 axes[1].yaxis.set_visible(False)
 
-im = U.plot_dimensional_score(y_mean, ax=axes[2], cmap='RdBu', vmin=vmin, vmax=vmax)
+im = U.plot_dimensional_score(y_mean, ax=axes[2], cmap=cmap, vmin=vmin, vmax=vmax)
 axes[2].set_title('$\\bar{y}$')
 axes[2].set_xlabel('Channel')
 axes[2].yaxis.set_visible(False)

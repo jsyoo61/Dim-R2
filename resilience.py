@@ -308,7 +308,7 @@ for var1 in var1_list:
 
         cb = fig.colorbar(im.collections[0], ax=ax, orientation='vertical', fraction=0.02, pad=0.04)
         cb.outline.set_visible(False)
-        fig.suptitle(f"$y_{{true}}$ noise channel variance: {var1}", y=1.11)
+        fig.suptitle(f"$y$ noise channel variance: {var1}", y=1.11)
         fig.patch.set_alpha(0.0)
         fig.savefig(path_save/f"{metric}_{var1}.png", dpi=300, bbox_inches='tight')
 
