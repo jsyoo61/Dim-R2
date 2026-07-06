@@ -1,8 +1,17 @@
 # Dim-R2
 
-Code for the paper **"Dimensional R2 Regression Metric"**.
+Code for "Yoo, Jaesung, et al. "A dimensional R2 regression metric." arXiv preprint arXiv:2605.01066 (2026)." ([Arxiv](https://arxiv.org/abs/2605.01066))
 
 Dim-R2 extends the standard R2 score to multidimensional predictions by computing R2 selectively along user-specified axes, exposing per-channel or per-timestep performance instead of collapsing everything into a single scalar.
+
+Please cite:
+
+    @article{yoo2026dimensional,
+    title={A dimensional R2 regression metric},
+    author={Yoo, Jaesung and Lemke, Stefan and Guo, Jian Zhong and Rajan, Kanaka and Hantman, Adam},
+    journal={arXiv preprint arXiv:2605.01066},
+    year={2026}
+    }
 
 ## File Overview
 
